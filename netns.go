@@ -13,6 +13,11 @@ import (
 	"syscall"
 )
 
+/*
+#include <unistd.h>  // close()
+*/
+import "C"
+
 // NsHandle is a handle to a network namespace. It can be cast directly
 // to an int and used as a file descriptor.
 type NsHandle int
@@ -54,8 +59,8 @@ func (ns NsHandle) IsOpen() bool {
 // Close closes the NsHandle and resets its file descriptor to -1.
 // It is not safe to use an NsHandle after Close() is called.
 func (ns *NsHandle) Close() error {
-	if err := syscall.Close(int(*ns)); err != nil {
-		return err
+	if err := C.close(C.int(*ns)); err != 0 {
+		return syscall.Errno(err)
 	}
 	(*ns) = -1
 	return nil

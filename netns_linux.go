@@ -13,6 +13,16 @@ import (
 	"syscall"
 )
 
+/*
+#include <fcntl.h> // open()
+
+int C_open(const char *path, int flags)
+{
+	return open(path, flags);
+}
+*/
+import "C"
+
 // SYS_SETNS syscall allows changing the namespace of the current process.
 var SYS_SETNS = map[string]uintptr{
 	"386":     346,
@@ -36,7 +46,7 @@ const (
 // Setns sets namespace using syscall. Note that this should be a method
 // in syscall but it has not been added.
 func Setns(ns NsHandle, nstype int) (err error) {
-	_, _, e1 := syscall.Syscall(SYS_SETNS, uintptr(ns), uintptr(nstype), 0)
+	_, _, e1 := syscall.RawSyscall(SYS_SETNS, uintptr(ns), uintptr(nstype), 0)
 	if e1 != 0 {
 		err = e1
 	}
@@ -65,11 +75,11 @@ func Get() (NsHandle, error) {
 // GetFromPath gets a handle to a network namespace
 // identified by the path
 func GetFromPath(path string) (NsHandle, error) {
-	fd, err := syscall.Open(path, syscall.O_RDONLY, 0)
+	fd, err := C.C_open(C.CString(path), C.O_RDONLY)
 	if err != nil {
 		return -1, err
 	}
-	return NsHandle(fd), nil
+	return NsHandle(int(fd)), nil
 }
 
 // GetFromName gets a handle to a named network namespace such as one
